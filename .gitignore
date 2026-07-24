@@ -1,0 +1,8 @@
+venv/
+downloads/
+*.mp3
+*.webm
+transcript.txt
+summary.txt
+__pycache__/
+*.pyc
