@@ -4,12 +4,13 @@ def transcribe_audio(file_path):
     model = WhisperModel("base", device="cpu", compute_type="int8")
     segments, info = model.transcribe(file_path)
 
-    text = ""
+    lines = []
     for segment in segments:
-        print(f"[{segment.start:.1f}s -> {segment.end:.1f}s] {segment.text}")
-        text += segment.text + " "
+        line = f"[{segment.start:.1f}s -> {segment.end:.1f}s] {segment.text}"
+        print(line)
+        lines.append(line)
 
-    return text
+    return "\n".join(lines)
 
 if __name__ == "__main__":
     path = input("Path to audio file: ")
