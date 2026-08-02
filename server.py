@@ -54,8 +54,13 @@ def process_video(req: ProcessRequest):
 def get_summary(req: SummaryRequest):
     reset_progress()
     session = sessions.get(req.video_title)
+
     if not session:
-        return {"error": "Video not processed yet. Call /process first."}
+        segments, chunks = load_processed_data(req.video_title)
+        if chunks is None:
+            return {"error": "Video not processed yet. Call /process first."}
+        session = {"chunks": chunks, "history": []}
+        sessions[req.video_title] = session
 
     summary = summarize(session["chunks"], req.model_choice)
     return {"summary": summary}
