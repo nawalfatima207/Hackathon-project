@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "310190903013",
+    "project_id": "ai-lecture-assistant-9f11c",
+    "storage_bucket": "ai-lecture-assistant-9f11c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:310190903013:android:a55436784c3bd067c0ce0c",
+        "android_client_info": {
+          "package_name": "com.example.ai_lecture_assistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdpemoL__2wgXVXkvLodi29xlKPxMFQK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
