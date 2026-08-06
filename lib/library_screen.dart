@@ -3,6 +3,7 @@ import 'app_colors.dart';
 import 'conversation_store.dart';
 
 class LectureItem {
+  final String? documentId;
   final String title;
   final String? summary;
   final int summaryRequestCount;
@@ -12,6 +13,7 @@ class LectureItem {
   final Color tagColor;
 
   LectureItem({
+    this.documentId,
     required this.title,
     required this.summary,
     this.summaryRequestCount = 0,
@@ -22,18 +24,50 @@ class LectureItem {
   });
 
   String get shortSummary {
-    if (summary == null || summary!.isEmpty) return 'No summary requested for this chat.';
-    return summary!.length > 80 ? '${summary!.substring(0, 80)}...' : summary!;
+    if (summary == null || summary!.isEmpty) {
+      return 'No summary requested for this chat.';
+    }
+
+    return summary!.length > 80
+        ? '${summary!.substring(0, 80)}...'
+        : summary!;
   }
 
   String get formattedDate {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final saved = DateTime(savedAt.year, savedAt.month, savedAt.day);
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final saved = DateTime(
+      savedAt.year,
+      savedAt.month,
+      savedAt.day,
+    );
+
     final diff = today.difference(saved).inDays;
+
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Yesterday';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+
     return '${saved.day} ${months[saved.month - 1]}';
   }
 }
@@ -54,7 +88,12 @@ class LibraryScreenState extends State<LibraryScreen> {
   @override
   void initState() {
     super.initState();
-    ConversationStore.instance.addListener(_onStoreChanged);
+
+    ConversationStore.instance.addListener(
+      _onStoreChanged,
+    );
+
+    ConversationStore.instance.refresh();
   }
 
   @override
@@ -132,12 +171,50 @@ class LibraryScreenState extends State<LibraryScreen> {
   }
 }
 
+
 class _LectureCard extends StatelessWidget {
   final LectureItem item;
   final int lectureNumber;
   final VoidCallback onTap;
 
-  const _LectureCard({required this.item, required this.lectureNumber, required this.onTap});
+  const _LectureCard({
+    required this.item,
+    required this.lectureNumber,
+    required this.onTap,
+  });
+
+  Future<void> _deleteConversation(BuildContext context) async {
+    if (item.documentId == null) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete conversation?'),
+          content: const Text(
+            'This conversation will be permanently removed from your library.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete == true) {
+      await ConversationStore.instance.delete(item.documentId!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,32 +228,114 @@ class _LectureCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              // TOP ROW
               Row(
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: item.tagColor, shape: BoxShape.circle)),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: item.tagColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+
                   const SizedBox(width: 8),
-                  Text('Lecture $lectureNumber', style: TextStyle(color: item.tagColor, fontWeight: FontWeight.w700, fontSize: 12)),
+
+                  Text(
+                    'Lecture $lectureNumber',
+                    style: TextStyle(
+                      color: item.tagColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+
                   const SizedBox(width: 8),
-                  Text('· ${item.formattedDate}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+
+                  Text(
+                    '· ${item.formattedDate}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+
                   const Spacer(),
-                  const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+
+                  // DELETE BUTTON
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.textMuted,
+                      size: 20,
+                    ),
+                    tooltip: 'Delete',
+                    onPressed: () => _deleteConversation(context),
+                  ),
+
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
                 ],
               ),
+
               const SizedBox(height: 8),
-              Text(item.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textDark)),
+
+              Text(
+                item.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: AppColors.textDark,
+                ),
+              ),
+
               const SizedBox(height: 4),
-              Text(item.shortSummary, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+
+              Text(
+                item.shortSummary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+              ),
+
               const Divider(height: 20),
+
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 14, color: AppColors.textMuted),
+                  const Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: AppColors.textMuted,
+                  ),
+
                   const SizedBox(width: 4),
-                  Text(item.duration, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+
+                  Text(
+                    item.duration,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ],

@@ -26,12 +26,15 @@ class HomeScreenState extends State<HomeScreen> {
   final List<ChatMessage> _messages = [];
   String? _errorText;
 
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static const String _baseUrl = 'http://localhost:8000';
 
   String? _currentVideoTitle;
   String? _currentSummary;
   String? _currentDuration;
-  bool _saveDialogShown = false;
+  String? _currentConversationId;
+
+  bool get hasUnsavedConversation => false;
+
 
   bool _isLoading = false;
   String? _statusText;
@@ -43,7 +46,6 @@ class HomeScreenState extends State<HomeScreen> {
   String _responsePreference = '';
 
   bool get _hasStarted => _messages.isNotEmpty;
-  bool get hasUnsavedConversation => _currentVideoTitle != null && !_saveDialogShown;
 
   void resetChat() {
     setState(() {
@@ -54,57 +56,105 @@ class HomeScreenState extends State<HomeScreen> {
       _currentSummary = null;
       _currentDuration = null;
       _statusText = null;
-      _saveDialogShown = false;
       _summaryRequestCount = 0;
+      _currentConversationId = null;
     });
   }
 
-  void markSaveDialogSeen() {
-    _saveDialogShown = true;
-  }
 
   void loadLecture(LectureItem item) {
     setState(() {
       _messages
         ..clear()
-        ..addAll(item.messages.map((m) => ChatMessage(m['text'] as String, m['isUser'] as bool)));
+        ..addAll(
+          item.messages.map(
+                (m) => ChatMessage(
+              m['text'] as String,
+              m['isUser'] as bool,
+            ),
+          ),
+        );
+
       _errorText = null;
       _controller.clear();
+
       _currentVideoTitle = item.title;
       _currentSummary = item.summary;
       _currentDuration = item.duration;
       _summaryRequestCount = item.summaryRequestCount;
-      _saveDialogShown = true;
+
+      // IMPORTANT:
+      // Remember which Firestore document this conversation belongs to.
+      _currentConversationId = item.documentId;
     });
   }
 
   Future<void> saveCurrentConversation() async {
-    print('saveCurrentConversation called, videoTitle: $_currentVideoTitle');
     if (_currentVideoTitle == null) {
-      print('No video title, aborting save.');
+      print('AUTO SAVE SKIPPED: No video title.');
       return;
     }
-    try {
-      await ConversationStore.instance.save(LectureItem(
-        title: _currentVideoTitle!,
-        summary: _currentSummary,
-        summaryRequestCount: _summaryRequestCount,
-        messages: _messages.map((m) => {'text': m.text, 'isUser': m.isUser}).toList(),
-        duration: _currentDuration ?? '0:00',
-        savedAt: DateTime.now(),
-        tagColor: AppColors.accent,
-      ));
-      print('Save succeeded.');
-    } catch (e, stack) {
-  if (e is FirebaseException) {
-  print('Save FAILED - code: ${e.code}, message: ${e.message}');
-  } else {
-  print('Save FAILED - unknown error type: ${e.runtimeType}');
-  }
-  }
-    _saveDialogShown = true;
-  }
 
+    print('AUTO SAVE STARTED');
+    print('Title: $_currentVideoTitle');
+    print('Duration: $_currentDuration');
+    print('Summary count: $_summaryRequestCount');
+    print('Current document ID: $_currentConversationId');
+    print('Messages: ${_messages.length}');
+
+    try {
+      final documentId =
+      await ConversationStore.instance.save(
+        LectureItem(
+          documentId: _currentConversationId,
+
+          title: _currentVideoTitle!,
+
+          summary: _currentSummary,
+
+          summaryRequestCount:
+          _summaryRequestCount,
+
+          messages: _messages
+              .map(
+                (m) => {
+              'text': m.text,
+              'isUser': m.isUser,
+            },
+          )
+              .toList(),
+
+          duration:
+          _currentDuration ?? '0:00',
+
+          savedAt: DateTime.now(),
+
+          tagColor: AppColors.accent,
+        ),
+
+        documentId:
+        _currentConversationId,
+      );
+
+
+      if (documentId != null) {
+        _currentConversationId = documentId;
+
+        print(
+          'AUTO SAVE SUCCESS: $documentId',
+        );
+      } else {
+        print(
+          'AUTO SAVE FAILED: No document ID returned.',
+        );
+      }
+
+    } catch (e) {
+      print(
+        'AUTO SAVE ERROR: $e',
+      );
+    }
+  }
   void showPreferencesSheet() {
     _preferenceController.text = _responsePreference;
     showModalBottomSheet(
@@ -307,6 +357,9 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() => _messages.add(ChatMessage('Error: could not reach the server. Is it running?', false)));
     } finally {
       setState(() => _isLoading = false);
+
+      // Automatically save/update the conversation.
+      await saveCurrentConversation();
     }
 
     _scrollToBottom();
