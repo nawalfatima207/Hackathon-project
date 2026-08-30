@@ -495,7 +495,7 @@ class HomeScreenState extends State<HomeScreen> {
                         controller: _controller,
                         enabled: !_isLoading,
                         decoration: const InputDecoration(
-                          hintText: 'Paste a link or ask something',
+                          hintText: 'Paste a link and get started',
                           hintStyle: TextStyle(color: AppColors.textMuted),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
