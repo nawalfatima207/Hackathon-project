@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:video_player/video_player.dart';
 import 'app_colors.dart';
 import 'library_screen.dart';
 import 'conversation_store.dart';
@@ -46,6 +47,44 @@ class HomeScreenState extends State<HomeScreen> {
   String _responsePreference = '';
 
   bool get _hasStarted => _messages.isNotEmpty;
+
+  // Idle "ready to study" robot animation, and the processing/loading animation.
+  VideoPlayerController? _idleVideoController;
+  VideoPlayerController? _processingVideoController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _idleVideoController = VideoPlayerController.asset('assets/animations/chatbot.mp4')
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() {});
+        _idleVideoController!
+          ..setLooping(true)
+          ..setVolume(0)
+          ..play();
+      });
+
+    _processingVideoController = VideoPlayerController.asset('assets/animations/settings.mp4')
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() {});
+        _processingVideoController!
+          ..setLooping(true)
+          ..setVolume(0);
+      });
+  }
+
+  @override
+  void dispose() {
+    _idleVideoController?.dispose();
+    _processingVideoController?.dispose();
+    _controller.dispose();
+    _scrollController.dispose();
+    _preferenceController.dispose();
+    super.dispose();
+  }
 
   void resetChat() {
     setState(() {
@@ -303,6 +342,7 @@ class HomeScreenState extends State<HomeScreen> {
       _messages.add(ChatMessage(text, true));
       _isLoading = true;
     });
+    _processingVideoController?.play();
     _controller.clear();
     _scrollToBottom();
     _pollProgress();
@@ -357,6 +397,8 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() => _messages.add(ChatMessage('Error: could not reach the server. Is it running?', false)));
     } finally {
       setState(() => _isLoading = false);
+      _processingVideoController?.pause();
+      _processingVideoController?.seekTo(Duration.zero);
 
       // Automatically save/update the conversation.
       await saveCurrentConversation();
@@ -380,141 +422,180 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final double inputRestingTop = screenHeight * 0.5;
+    final double inputRestingTop = screenHeight * 0.60;
 
-    return Stack(
-      children: [
-        Positioned(
-          top: 8, left: 60, right: 20,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text('AI STUDY ASSISTANT', style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
-              Text('Home', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-            ],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background,
+            AppColors.accent.withOpacity(0.06),
+            AppColors.background,
+          ],
         ),
-
-        Positioned.fill(
-          top: 90, bottom: 100,
-          child: AnimatedOpacity(
-            opacity: _hasStarted ? 1 : 0,
-            duration: const Duration(milliseconds: 400),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return Align(
-                  alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    decoration: BoxDecoration(
-                      color: msg.isUser ? AppColors.accent : AppColors.card,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Text(msg.text, style: TextStyle(color: msg.isUser ? Colors.white : AppColors.textDark)),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          top: _hasStarted ? -150 : inputRestingTop - 100,
-          left: 24, right: 24,
-          child: AnimatedOpacity(
-            opacity: _hasStarted ? 0 : 1,
-            duration: const Duration(milliseconds: 300),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 8, left: 60, right: 20,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                Text('Ready to study?', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                SizedBox(height: 6),
-                Text('Paste a lecture link below to get a summary, or ask a question.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                Text('AI STUDY ASSISTANT', style: TextStyle(color: AppColors.textMuted, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+                Text('Home', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
               ],
             ),
           ),
-        ),
 
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          left: 20, right: 20,
-          top: _hasStarted ? null : inputRestingTop,
-          bottom: _hasStarted ? 16 : null,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_errorText != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, bottom: 6),
-                  child: Text(_errorText!, style: const TextStyle(color: AppColors.accent, fontSize: 12)),
-                ),
-              if (_isLoading && _statusText != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, bottom: 8),
-                  child: Text(
-                    _statusText!,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontStyle: FontStyle.italic),
+          Positioned.fill(
+            top: 90, bottom: 100,
+            child: AnimatedOpacity(
+              opacity: _hasStarted ? 1 : 0,
+              duration: const Duration(milliseconds: 400),
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return Align(
+                    alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      decoration: BoxDecoration(
+                        color: msg.isUser ? AppColors.accent : AppColors.card,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(msg.text, style: TextStyle(color: msg.isUser ? Colors.white : AppColors.textDark)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            top: _hasStarted ? -150 : inputRestingTop - 225,
+            left: 24, right: 24,
+            child: AnimatedOpacity(
+              opacity: _hasStarted ? 0 : 1,
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (_idleVideoController != null && _idleVideoController!.value.isInitialized)
+                    ClipOval(
+                      child: SizedBox(
+                        width: 140,
+                        height: 140,
+                        child: VideoPlayer(_idleVideoController!),
+                      ),
+                    ),
+                  const Text('Ready to study?', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 6),
+                  const Text('Paste a lecture link below to get a summary, or ask a question.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                ],
+              ),
+            ),
+          ),
+
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            left: 20, right: 20,
+            top: _hasStarted ? null : inputRestingTop,
+            bottom: _hasStarted ? 16 : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, bottom: 6),
+                    child: Text(_errorText!, style: const TextStyle(color: AppColors.accent, fontSize: 12)),
+                  ),
+                if (_isLoading)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, bottom: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_processingVideoController != null && _processingVideoController!.value.isInitialized)
+                          ClipOval(
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: VideoPlayer(_processingVideoController!),
+                            ),
+                          ),
+                        if (_statusText != null) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _statusText!,
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 6))],
+                  ),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: _showModelPicker,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_selectedModel, style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textMuted),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(width: 1, height: 20, color: AppColors.textMuted.withOpacity(0.2)),
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          enabled: !_isLoading,
+                          decoration: const InputDecoration(
+                            hintText: 'Paste a link and get started',
+                            hintStyle: TextStyle(color: AppColors.textMuted),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                          onSubmitted: (_) => _handleSubmit(),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _isLoading ? null : _handleSubmit,
+                        icon: const Icon(Icons.arrow_upward),
+                        style: IconButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 6))],
-                ),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: _showModelPicker,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_selectedModel, style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
-                            const Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textMuted),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(width: 1, height: 20, color: AppColors.textMuted.withOpacity(0.2)),
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        enabled: !_isLoading,
-                        decoration: const InputDecoration(
-                          hintText: 'Paste a link and get started',
-                          hintStyle: TextStyle(color: AppColors.textMuted),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        onSubmitted: (_) => _handleSubmit(),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isLoading ? null : _handleSubmit,
-                      icon: const Icon(Icons.arrow_upward),
-                      style: IconButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
