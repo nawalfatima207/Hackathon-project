@@ -1,60 +1,67 @@
- HEAD
-.env
-venv/
-downloads/
-*.mp3
-*.webm
-transcript.txt
-summary.txt
-__pycache__/
-*.pyc
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# =========================
+# Flutter frontend
+# =========================
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub-cache/
+frontend/coverage/
 
-# IntelliJ related
+# Flutter generated / platform files
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.framework
+frontend/ios/Flutter/Flutter.podspec
+frontend/ios/Flutter/.last_build_id
+
+frontend/linux/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+frontend/windows/flutter/ephemeral/
+
+# Flutter/Firebase generated secret
+frontend/lib/firebase_options.dart
+
+
+# =========================
+# Python backend
+# =========================
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.pyc
+
+# Backend environment/secrets
+backend/.env
+*.env
+
+# Generated backend files
+backend/downloads/
+backend/*.mp3
+backend/*.webm
+backend/transcript.txt
+backend/summary.txt
+
+
+# =========================
+# General
+# =========================
+*.pyc
+*.log
+*.swp
+*.class
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Firebase secrets
-lib/firebase_options.dart
-android/build/
- 35dbf74e660a1fc064814f39d3d51f1d63107f03
+.vscode/
+.DS_Store
+Thumbs.db
