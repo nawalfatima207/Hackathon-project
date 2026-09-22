@@ -1,0 +1,225 @@
+[0:00 -> 0:02]  Learning to code is so different in 2026.
+[0:02 -> 0:07]  So in this video, I shall explain to you how to learn to code in 2026.
+[0:07 -> 0:09]  Starting off with what coding actually looks like today, it looks very different.
+[0:09 -> 0:13]  Then I'll explain what you should be learning that is still relevant right now and for the future.
+[0:13 -> 0:16]  And finally, some tips on how to supercharge your learning.
+[0:16 -> 0:20]  Oh, by the way, just in case you have any doubt about whether you should still learn how to code in 2026,
+[0:20 -> 0:26]  the answer is yes, there are still so many opportunities that are only available with people who know how to code.
+[0:26 -> 0:30]  Plus, learning to code in 2026 is so much easier and faster than it used to be.
+[0:30 -> 0:33]  So it's kind of a no-brainer if you want to build stuff.
+[0:33 -> 0:36]  Now with that out of the way, in case you don't know me, hi, my name is Tina.
+[0:36 -> 0:41]  I used to be a data scientist at Metta and I have been coding for 10 years without further ado.
+[0:41 -> 0:42]  Let's go.
+[0:42 -> 0:45]  A portion of this video is sponsored by Warp.
+[0:45 -> 0:51]  On February 3rd, 2025, Andre Kaparthy, the previous director of AI at Tesla and the founding member of OpenAI,
+[0:51 -> 0:54]  made a viral tweet defining a new term called vibe coding.
+[0:54 -> 0:58]  He explains, there's a new kind of coding I call vibe coding, where you fully give into the vibes,
+[0:58 -> 1:01]  embrace exponentials, and I forget that the code even exists.
+[1:01 -> 1:04]  It's not too bad for throwaway weakened projects, but still quite amusing.
+[1:04 -> 1:10]  Then, almost exactly a year later on February 5th, 2026, he made another post.
+[1:10 -> 1:15]  Today, one year later, programming via LM agents has increasingly becoming a default workflow for professionals,
+[1:15 -> 1:17]  except with more oversight and scrutiny.
+[1:17 -> 1:21]  Now to differentiate this much more sophisticated integral workflow from vibe coding,
+[1:21 -> 1:24]  he said his current favorite term for it is, agentic engineering.
+[1:24 -> 1:28]  You have your terminal, slash IDE open, where you have multiple coding agents,
+[1:28 -> 1:32]  coding fiercely away for you, and you're like, build this, fix this.
+[1:32 -> 1:33]  No, don't do that.
+[1:33 -> 1:34]  Do this instead.
+[1:34 -> 1:37]  Orcustrating your AI agents like a puppet master.
+[1:37 -> 1:38]  But do not be fool.
+[1:38 -> 1:43]  It may look like you're just speaking English to the AI agents and just orchestrating them,
+[1:43 -> 1:46]  but you need to be an experienced software engineer to even do that.
+[1:46 -> 1:50]  You need to know how to structure what it is that you want to build in a way that the AI agents can
+[1:50 -> 1:52]  understand, be able to provide context and documentation.
+[1:52 -> 1:57]  And in order to correct the AI and tell it that it's wrong, you need to actually know what is right.
+[1:57 -> 2:00]  To be a good manager, you need to know what it is that you're managing.
+[2:00 -> 2:05]  So, that is why if you want to learn how to code in 2026, you still need to know the fundamentals of
+[2:05 -> 2:06]  coding and engineering.
+[2:06 -> 2:11]  But instead of focusing so much on the details of the code implementation itself,
+[2:11 -> 2:14]  it's about understanding big picture software design, systems, and architecture.
+[2:14 -> 2:19]  And particular emphasis on security and privacy, because these are the things that AI
+[2:19 -> 2:21]  coding agents tend to struggle the most with.
+[2:21 -> 2:25]  Then you can actually move on to take advantage of the AI coding tools that we have available today
+[2:25 -> 2:27]  and really do agent take engineering.
+[2:27 -> 2:29]  So, shall I tell you what it is that you need to learn?
+[2:29 -> 2:32]  All right, I'm going to list out the topics in a roughly chronological order that I think you
+[2:32 -> 2:36]  should be learning, assuming you don't know anything, and also suggest some resources on these topics.
+[2:38 -> 2:42]  Okay, so first thing that you want to learn is the basics of coding itself.
+[2:42 -> 2:48]  Stuff like variables, types, if statements, loops, object-oriented programming, and APIs.
+[2:48 -> 2:52]  Also, I'm using Python as the demo language to learn, which is particularly good if you want to
+[2:52 -> 2:56]  be building AI agents and doing data stuff. But if you want to be doing something more like web stuff,
+[2:56 -> 2:59]  like developing web apps, you might want to start off the language that I dropped the script.
+[2:59 -> 3:01]  It's okay though, because I'm going to give you guys a prompt at the end of the section
+[3:01 -> 3:06]  that you can use to customize this learning plan, specific to the language of what you want to be learning.
+[3:06 -> 3:10]  Okay, great. So these are the basic basics. Like, you really need to know these.
+[3:10 -> 3:13]  Otherwise, you wouldn't even be able to read the code that the AI generates.
+[3:13 -> 3:17]  That's so I can't stop me because I can read.
+[3:17 -> 3:20]  And I'm going to put on screen now some of my favorite resources on this topic.
+[3:20 -> 3:24]  I personally recommend going with these human-made resources,
+[3:24 -> 3:26]  because we know that they're really good. They've been vetted by thousands of engineers.
+[3:26 -> 3:31]  Besides, all AI-generated code is based upon code that was written by human developers for decades.
+[3:31 -> 3:34]  Next up, you need to learn about software architecture.
+[3:34 -> 3:37]  What that means is how is it that projects are structured?
+[3:37 -> 3:41]  How do you choose a text stack, the system design, what kind of APIs should you be using,
+[3:41 -> 3:44]  and how the data flows through your software, and where is it being stored?
+[3:44 -> 3:45]  What kind of databases are you using?
+[3:45 -> 3:49]  And testing. Testing is so important, especially if you're using AI coding agents.
+[3:49 -> 3:52]  You need to understand how to write test cases and how to test different parts of your software.
+[3:52 -> 3:54]  And finally, how does deployment work?
+[3:54 -> 3:56]  Where are you going to be hosting your software?
+[3:56 -> 3:58]  Does this like the bread and butter of software engineering?
+[3:58 -> 4:04]  And you really need to understand these high-level things to be able to direct your AI,
+[4:04 -> 4:08]  to be building the things I should be building and redirecting it when it's doing something wrong.
+[4:08 -> 4:11]  You need to be able to conceptualize what the end product should look like,
+[4:11 -> 4:13]  based upon the requirements that you have.
+[4:13 -> 4:17]  For example, at work, you might want to build a software that stores a massive amount of information
+[4:17 -> 4:19]  and have lots of people querying it all the time.
+[4:19 -> 4:22]  So then you need to be thinking, what sort of database should I be using?
+[4:22 -> 4:23]  That is cheap, safe, and fast.
+[4:23 -> 4:27]  And how do I design a user interface that allows for multiple people querying at the same time?
+[4:27 -> 4:30]  These are all like design questions that you need to be able to understand.
+[4:30 -> 4:34]  I'm going to put on screen now some resources that you can check out to learn about these topics.
+[4:34 -> 4:36]  Next up is version control and GitHub.
+[4:36 -> 4:41]  By version control, we mean a system that's able to track the changes in your files and code over time.
+[4:41 -> 4:44]  So you can track the history, revert back if you need to,
+[4:44 -> 4:46]  and collaborate simultaneously with other people as well.
+[4:46 -> 4:50]  There are actually a lot of different types of version control software out there.
+[4:50 -> 4:51]  The most popular one is called Git.
+[4:51 -> 4:56]  So people would use Git in order to do version control and then put their code on something called GitHub.
+[4:56 -> 4:59]  GitHub is industry standard for displaying your code,
+[4:59 -> 5:01]  sharing it, and collaborating with other people.
+[5:01 -> 5:03]  This is especially important if you're intending to do agent again,
+[5:03 -> 5:07]  engineering because you want to be tracking the changes that your AI coding agent is doing.
+[5:07 -> 5:12]  In case it makes a mistake, you can revert it and redirect it without losing your entire code
+[5:12 -> 5:16]  base. Which by the way, this happens to a lot of vibe coders who did not know the fundamentals of
+[5:16 -> 5:20]  coding and engineering. I'll put on screen now some resources for you to learn about version control
+[5:20 -> 5:23]  and GitHub. Next up is security and privacy.
+[5:23 -> 5:29]  So this is a topic that was not particularly important when somebody is learning how to code
+[5:29 -> 5:34]  like a few years back. Obviously security and privacy is important, but it's sort of something that
+[5:34 -> 5:39]  just gets taught within the scope of other things. How does authentication work and how do you
+[5:39 -> 5:43]  integrate authentication into your apps? But the reason why I'm separating this out as its own little
+[5:43 -> 5:48]  topic here is because I think it's particularly important in this day and age to learn about security
+[5:48 -> 5:53]  and privacy because it's usually one of the blind spots of AI coding agents. So you as the human can't
+[5:53 -> 5:57]  just kind of like hope that the AI agent is just going to take care of it. You don't need to be quite
+[5:57 -> 6:01]  explicit in incorporating these principles. Don't worry, this is honestly not a really big topic.
+[6:01 -> 6:08]  It's just really important to know and as they say, I think paranoia makes a good engineer maybe.
+[6:08 -> 6:12]  I'm going to put on screen now a few different resources that I suggest you take a look at and learn
+[6:12 -> 6:15]  about privacy and security. Alright, so at this point, you would have covered pretty much the
+[6:15 -> 6:21]  fundamentals of coding and software engineering now. You have now earned your stripes to be able
+[6:21 -> 6:28]  to harness the power of agentic engineering by using AI coding agents. Yay! But with that being said,
+[6:28 -> 6:34]  I do want to throw in a bonus little topic, which is debatable whether it's actually like
+[6:34 -> 6:38]  necessary necessary for you to know this topic. But I personally think it's pretty important and
+[6:38 -> 6:42]  you're probably going to have to learn about it anyway. And that is microservices, otherwise known as
+[6:42 -> 6:47]  the concept of containerization. This is a software deployment method that packages and applications
+[6:47 -> 6:52]  code together with all of the files, libraries, and dependencies that it needs in order to run that
+[6:52 -> 6:57]  piece of code. So it's sort of like little packages, little containers of pieces of software. The purpose
+[6:57 -> 7:01]  of this is the isolated application from its surroundings. So it's not interacting with the rest of
+[7:01 -> 7:05]  your computer. And it's able to run consistently across different computer environments, like different
+[7:05 -> 7:09]  computers, different computer systems, different types of clouds. This is usually more of an advanced
+[7:09 -> 7:13]  topic. And people usually learn about this when they're building stuff or like on the job. But the reason
+[7:13 -> 7:18]  why I'm putting this here as like an optional, but maybe you should learn about this kind of topic is
+[7:18 -> 7:22]  as another precaution if you're using AI coding agents. You can imagine if you're letting your coding
+[7:22 -> 7:26]  agent, or even like multiple coding agents, just do whatever it wants, right? It can end up messing up
+[7:26 -> 7:31]  your development environment entirely, or like building things in a way that cannot be properly
+[7:31 -> 7:35]  deployed and used by other people. I would be just like really frustrated because you can't figure out
+[7:35 -> 7:39]  why it's happening. So if you do take the precaution to containerize, you can end up with something
+[7:39 -> 7:46]  more reliable. And if your AI agent does run a mock and starts doing crazy things, it's going to be
+[7:46 -> 7:50]  in its own little environment doing it. So worst case scenario, just shut off that environment. Let me know
+[7:50 -> 7:55]  in the comments of these topics I have just covered. How many of these topics do you already know? Which ones do
+[7:55 -> 7:59]  you still need to learn? Curious where you guys are on the learning journey? As promised, I'm also
+[7:59 -> 8:03]  going to put a prompt on screen, also a probably linking description to you, which you can put into your
+[8:03 -> 8:09]  favorite AI chatbot, chatgbt, Gemini, Cloud, when deep seek, whatever you want. And it will help adapt
+[8:09 -> 8:13]  this learning plan and resource list to fit the goals of your learning and also help you determine
+[8:13 -> 8:18]  which coding language makes the most sense for you to learn. Yay, amazing. You have now earned your
+[8:18 -> 8:24]  stripes to be able to tackle this new world, this brave new world of agentic engineering.
+[8:25 -> 8:31]  Now, agentic engineering itself. Gosh, it just, agentic engineers does not sound as cool as
+[8:31 -> 8:38]  vibe coding. It's just not as catchy. It's fine. Agentic engineering. Okay, agentic engineering itself
+[8:38 -> 8:42]  is also a skill. It involves how to set up your project and how to set up your AI coding agents,
+[8:42 -> 8:46]  how to communicate what it is that you wanted to build to your coding agents and how to monitor them
+[8:46 -> 8:50]  correctly among many other things. For agentic engineering, there are different options for which
+[8:50 -> 8:55]  coding agents to use and how to use them and orchestrate them together. Me personally, I really like
+[8:55 -> 9:01]  using warp who is also the sponsor of this portion of the video because it's a pro developer tool that
+[9:01 -> 9:06]  covers the full spectrum of AI coding. Gidec started is so simple. I built this entire project using warp,
+[9:06 -> 9:11]  but as it scaled, I needed to move faster and that's where the magic begins. Instead of tackling one
+[9:11 -> 9:16]  thing at a time, I deployed multiple coding agents simultaneously. Here's one that's adding a back-in
+[9:16 -> 9:21]  feature, one undocumented and one that's writing tests. This is all powered by Oz, which is a
+[9:21 -> 9:26]  cloud-based agent orchestration platform built on top of work. The Oz dashboard gives you a real time
+[9:26 -> 9:30]  view of all your agents. Add a glance. You can see what they're working on, their status, and any
+[9:30 -> 9:35]  issues that they may have and because it's cloud-based, each agent runs in its own isolated environment,
+[9:35 -> 9:40]  meaning that they won't interfere with each other and my poor MacBook Air can stay alive. That is not
+[9:40 -> 9:45]  all. You can actually incorporate Oz within your project itself. For example, this is a scheduled agent
+[9:45 -> 9:49]  that updates my microsite every day. It goes in there, takes the AI news of that day, which is what I
+[9:49 -> 9:54]  care about and summarizes it and displays that information for me. With Oz, you can also convert skills
+[9:54 -> 9:58]  into AI coding agents. Integrate them directly with slack and linear and tap into a ton of other
+[9:58 -> 10:04]  features that support teamwork flows. 700,000 engineers are already using it and 97% with code-diffs
+[10:04 -> 10:08]  get accepted. Which honestly is pretty impressive and tracks from my experience too. So if you want to
+[10:08 -> 10:11]  get started, you can get started for free at the link linked below. Thank you so much for
+[10:11 -> 10:17]  watching this video. Now back to the video. Unfortunately, there are not that many good resources
+[10:17 -> 10:21]  on agent engineering, probably because it's such a new topic. But I'm going to put on screen now,
+[10:21 -> 10:25]  a couple of videos that I've done and some other resources as well. If you guys want, I can also
+[10:25 -> 10:29]  make a video that specifically covers how to do agent engineering. You know what's crazy? Is that
+[10:29 -> 10:35]  to learn all of these topics that we just discussed? Higher to AI, it would have taken you years. People
+[10:35 -> 10:39]  go to school for this and then work multiple years to get to this level. Or even if they're attending
+[10:39 -> 10:44]  a fast track boot camp, we're still talking at least 10 to 12 months completely full-time. But with
+[10:44 -> 10:49]  good learning techniques and with AI to help with your learning, you can reduce the learning time
+[10:49 -> 10:53]  down by so much. I think that if you really focus and if you say you're doing it completely full-time,
+[10:53 -> 10:58]  I would estimate maybe like six months to be able to learn all these topics very solidly. So in the
+[10:58 -> 11:01]  next section, I'm actually going to share some of my favorite learning techniques that can help you
+[11:01 -> 11:05]  learn faster. For those of you who've watched my channel for a while, you probably also know that
+[11:05 -> 11:10]  learning things fast is like my favorite activity. So very exciting. Let's not talk about tips to
+[11:10 -> 11:15]  supercharger learning. I'm going to divide these tips up into two different categories. The first is
+[11:15 -> 11:19]  how to use your resources better, like the lectures, the books. And the second is how to use projects
+[11:19 -> 11:24]  for learning and specifically how to use a AI coding agent to help you build the project and learn
+[11:24 -> 11:29]  at the same time. Two birds of one stone. Okay, let's first talk about how to use resources. If your
+[11:29 -> 11:33]  resource happens to be like a video or like some text or like readings and stuff like that, I would
+[11:33 -> 11:39]  really recommend using something like notebook LM and put all that information in there and ask
+[11:39 -> 11:44]  it to summarize things for you and also to generate questions that will guide you along the work.
+[11:44 -> 11:48]  This is called primate and can really speed up your learning process because you'll understand
+[11:48 -> 11:51]  what are the things that you need to be learning and how they fit together with each other.
+[11:51 -> 11:56]  As you're going through the lectures, the text and like code, the bits and whatever, if there's anything
+[11:56 -> 12:02]  you don't understand, you can also just pop you paste that and put that into AI to help you explain what's
+[12:02 -> 12:07]  going on. When it comes to code and logic, at least of the filming right now, the best AI model to do
+[12:07 -> 12:11]  this would be clot. I personally default using clots on it for anything that happens to do with code.
+[12:11 -> 12:15]  But if you don't want to pay for it and you run out of the free trial, honestly, most modern AI models
+[12:15 -> 12:19]  would be able to help explain code. You can even use the free ones, the open source ones. Like,
+[12:19 -> 12:24]  Quen, Kimmy, Redie Pseq. Another way that I really like using AI models to help me learn is by taking
+[12:24 -> 12:29]  a concept and asking it to give me examples and analogies because this will really allow me to solidify
+[12:29 -> 12:33]  my mind to understand the concept. Like, for example, if you're learning about object-oriented
+[12:33 -> 12:38]  programming, you can ask it, explain object-oriented programming to me using analogy and provide examples.
+[12:38 -> 12:43]  Much clearer, I think. And finally, oftentimes, the best way to learn how to code is to take the code
+[12:43 -> 12:48]  and the snippets from the resources that you have, like other people's code and then ask AI to help
+[12:48 -> 12:54]  you understand the code that's there to explain to you what the code is doing. This is so powerful and
+[12:55 -> 13:00]  kind of salty that I did not have this option when I was learning how to code.
+[13:01 -> 13:05]  To do this, you can also just like copy paste where like upload the code into an AM model or this could
+[13:05 -> 13:09]  be a good opportunity for you to set up an AI coding agent. Just give it the code and it would explain
+[13:09 -> 13:14]  to you the structure of the code how the pieces are fitting together what different lines of code mean
+[13:14 -> 13:18]  line by line if you want. And speaking of projects, this is a good transition to the second category
+[13:18 -> 13:23]  of tips that I have, which is four projects. First of all, I want to just emphasize that
+[13:23 -> 13:28]  projects are the best way for you to learn how to code. Hands down. You can watch like so many
+[13:28 -> 13:31]  lectures read so many things and whatever and you think that you know these things. Yeah, but you don't
+[13:31 -> 13:36]  unless you actually start building with it. And the way you do that is by doing projects. So I encourage
+[13:36 -> 13:40]  you to do projects continuously as you're learning. Like if you're learning about how to use an API,
+[13:40 -> 13:45]  actually make a project in which you use an API or multiple APIs. If you're learning about testing,
+[13:45 -> 13:50]  write some tests. Try and understand the differences between different text acts. Try them out yourself,
+[13:50 -> 13:55]  especially with the help of AI coding agents. It is so easy to do this. You can ask the coding
+[13:55 -> 14:01]  agent something like build me a music storage software with like xyz specs built with a gen go back in
+[14:01 -> 14:06]  next j as front end and store the data in a SQL ID database, for example. So you're going to learn
+[14:06 -> 14:11]  faster gamer experience and also work towards using AI coding agents with agent to engineering.
+[14:11 -> 14:16]  I previously mentioned other people's projects as well. Another great way for you to learn is to take
+[14:16 -> 14:21]  other people's projects and then adapt them. Add on more stuff to them. Change around the code
+[14:21 -> 14:26]  and see how the results change. This is such a great way to learn and a staple amongst engineering
+[14:26 -> 14:31]  students everywhere. Another tip as you're coding, you can also ask AI to give you multiple suggestions
+[14:31 -> 14:35]  for how to implement something. This way you can expand the scope of your knowledge which is going to
+[14:35 -> 14:41]  make you a much better coder. And final little tip, ask AI to help you understand documentation. I hate
+[14:41 -> 14:46]  reading documentation. Like I hate it so much. I don't think I've read any documentation since like
+[14:46 -> 14:52]  2024 because I will ask AI to help me understand documentation. To be clear, I still need to understand
+[14:52 -> 14:56]  the documentation. I just don't like reading it. So this is a great way to understand documentation
+[14:56 -> 15:00]  faster and incorporate them into your projects. I'm not going to go into vibe coding such
+[15:00 -> 15:05]  agentic engineering specific tips right now because there's just like way too much and there's a whole
+[15:05 -> 15:11]  other video that I can make on this topic. So I'm just going to put on screen some of my favorite
+[15:11 -> 15:16]  little vibe coding tips. If that's helpful for you guys, just know that this is not everything and
+[15:16 -> 15:20]  it might be confusing if you've never had any experience at all. Let me know in the comments if you
+[15:20 -> 15:26]  want me to actually make like a fully fledge video for that topic. Alright, we have now come to the end
+[15:26 -> 15:30]  of this video. Thank you so much for watching until the end. I know that was a lot. I really hope
+[15:30 -> 15:35]  this is helpful to you. I'm so glad that you're learning how to code in 2026. That's the luck in your
+[15:35 -> 15:38]  coding journey. And I will see you guys in next video or livestream.
