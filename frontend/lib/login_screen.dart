@@ -1,14 +1,13 @@
 import 'package:zero_ai_project/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
-import 'signup_screen.dart';
-import 'main.dart';
 import 'widgets/zylo_logo.dart';
 import 'widgets/google_logo.dart';
 
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final VoidCallback? onShowSignup;
+  const LoginScreen({super.key, this.onShowSignup});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -20,6 +19,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show any error left over from a Google redirect sign-in.
+    _errorText = AuthService.instance.takeRedirectError();
+  }
 
   Future<void> _handleLogin() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
@@ -43,11 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorText = error;
     });
 
-    if (error == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const RootShell()),
-      );
-    }
+    // On success AuthGate (main.dart) reacts to the auth stream and shows the
+    // home screen -- no manual navigation needed here.
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -64,11 +67,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorText = error;
     });
 
-    if (error == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const RootShell()),
-      );
-    }
+    // On success AuthGate (main.dart) reacts to the auth stream and shows the
+    // home screen -- no manual navigation needed here.
   }
 
   @override
@@ -127,17 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(_errorText!, style: const TextStyle(color: AppColors.accent, fontSize: 13)),
                 ],
 
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: forgot-password flow
-                    },
-                    child: const Text('Forgot password?', style: TextStyle(color: AppColors.accent, fontSize: 13)),
-                  ),
-                ),
-
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
@@ -186,11 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text("Don't have an account? ", style: TextStyle(color: AppColors.textMuted)),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const SignupScreen()),
-                        );
-                      },
+                      onTap: widget.onShowSignup,
                       child: const Text(
                         'Sign up',
                         style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700),

@@ -39,7 +39,7 @@ class QuestionRequest(BaseModel):
 class SummaryRequest(BaseModel):
     video_title: str
     model_choice: str = "ollama"
-    response_language: str | None = None   # None = use the video's own detected language
+    response_language: str | None = None   # None = defaults to English in pipeline
 
 
 @app.post("/process")
@@ -50,25 +50,24 @@ def process_video(req: ProcessRequest):
     try:
         video_title, audio_path = download_audio(req.url)
 
-        segments, chunks, detected_language = load_processed_data(video_title)
+        segments, chunks = load_processed_data(video_title)
         if chunks is None:
-            segments, detected_language = transcribe_audio_router(
+            segments = transcribe_audio_router(
                 audio_path, engine=req.engine, language=req.language
             )
             chunks = group_into_chunks(segments)
             chunks = embed_chunks(chunks)
-            save_processed_data(video_title, segments, chunks, detected_language)
+            save_processed_data(video_title, segments, chunks)
         else:
-            print(f"[server] Loaded cached transcript + embeddings. Detected language: {detected_language}")
+            print(f"[server] Loaded cached transcript + embeddings.")
 
         sessions[video_title] = {
             "chunks": chunks,
             "history": [],
-            "detected_language": detected_language,
         }
         duration = format_timestamp(segments[-1]['end']) if segments else "0:00"
 
-        return {"video_title": video_title, "duration": duration, "detected_language": detected_language}
+        return {"video_title": video_title, "duration": duration}
     except PipelineInterrupted:
         return {"error": "Cancelled."}
 
@@ -81,16 +80,15 @@ def get_summary(req: SummaryRequest):
         session = sessions.get(req.video_title)
 
         if not session:
-            segments, chunks, detected_language = load_processed_data(req.video_title)
+            segments, chunks = load_processed_data(req.video_title)
             if chunks is None:
                 return {"error": "Video not processed yet. Call /process first."}
-            session = {"chunks": chunks, "history": [], "detected_language": detected_language}
+            session = {"chunks": chunks, "history": []}
             sessions[req.video_title] = session
 
         summary = summarize(
             session["chunks"], req.model_choice,
-            response_language=req.response_language,
-            detected_language=session.get("detected_language"),
+            response_language=req.response_language or "English",
         )
         return {"summary": summary}
     except PipelineInterrupted:

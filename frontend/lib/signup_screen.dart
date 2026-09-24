@@ -2,12 +2,11 @@ import 'package:zero_ai_project/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:zero_ai_project/widgets/google_logo.dart';
 import 'app_colors.dart';
-import 'login_screen.dart';
-import 'main.dart';
 
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  final VoidCallback? onShowLogin;
+  const SignupScreen({super.key, this.onShowLogin});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -51,11 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
       _errorText = error;
     });
 
-    if (error == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const RootShell()),
-      );
-    }
+    // AuthGate (main.dart) moves to the home screen once Firebase signs in.
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -72,11 +67,7 @@ class _SignupScreenState extends State<SignupScreen> {
       _errorText = error;
     });
 
-    if (error == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const RootShell()),
-      );
-    }
+    // AuthGate (main.dart) moves to the home screen once Firebase signs in.
   }
 
   @override
@@ -188,11 +179,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     const Text('Already have an account? ', style: TextStyle(color: AppColors.textMuted)),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      },
+                      onTap: widget.onShowLogin,
                       child: const Text(
                         'Log in',
                         style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700),

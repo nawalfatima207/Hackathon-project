@@ -41,7 +41,7 @@ class HomeScreenState extends State<HomeScreen> {
   final List<ChatMessage> _messages = [];
   String? _errorText;
 
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'http://192.168.0.109:8000';
 
   String? _currentVideoTitle;
   String? _currentSummary;
@@ -54,6 +54,12 @@ class HomeScreenState extends State<HomeScreen> {
   String? _statusText;
   http.Client _httpClient = http.Client();
   bool _wasInterrupted = false;
+
+  // Bumped every time the visible chat changes (new chat / open another chat).
+  // A request remembers the value it started with; if it no longer matches
+  // when the request finishes, the answer belongs to a chat the user has left
+  // and is thrown away instead of being written into the current chat.
+  int _session = 0;
 
   // Transcription is handled separately from question-answering: Groq's
   // hosted Whisper, or a local faster-whisper run. This only affects the
@@ -85,8 +91,35 @@ class HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Stops any request still running for the chat being left: tells the
+  /// backend to stop, aborts the HTTP call, and invalidates its session so a
+  /// late reply can't leak into the next chat. The old chat is saved first
+  /// (with a "Cancelled." note) so nothing already done is lost.
+  /// Call inside setState.
+  void _cancelInFlightRequest() {
+    if (_isLoading) {
+      if (_currentVideoTitle != null) {
+        _messages.add(ChatMessage('Cancelled.', false));
+        saveCurrentConversation(); // snapshot is taken synchronously
+      }
+      _sendInterruptToBackend();
+      _httpClient.close(); // aborts the in-flight request
+      _httpClient = http.Client();
+      _isLoading = false;
+      _statusText = null;
+    }
+    _session++;
+  }
+
+  Future<void> _sendInterruptToBackend() async {
+    try {
+      await http.post(Uri.parse('$_baseUrl/interrupt'));
+    } catch (_) {}
+  }
+
   void resetChat() {
     setState(() {
+      _cancelInFlightRequest();
       _messages.clear();
       _errorText = null;
       _controller.clear();
@@ -100,7 +133,14 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void loadLecture(LectureItem item) {
+    // Tapping the chat that is currently open (and still working) just shows it.
+    if (_isLoading &&
+        item.documentId != null &&
+        item.documentId == _currentConversationId) {
+      return;
+    }
     setState(() {
+      _cancelInFlightRequest();
       _messages
         ..clear()
         ..addAll(
@@ -125,6 +165,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<void> saveCurrentConversation() async {
     if (_currentVideoTitle == null) return;
+    final session = _session;
 
     try {
       final documentId = await ConversationStore.instance.save(
@@ -141,7 +182,7 @@ class HomeScreenState extends State<HomeScreen> {
         documentId: _currentConversationId,
       );
 
-      if (documentId != null) {
+      if (documentId != null && session == _session) {
         _currentConversationId = documentId;
       }
     } catch (e) {
@@ -316,12 +357,12 @@ class HomeScreenState extends State<HomeScreen> {
         (text.contains('youtube.com') || text.contains('youtu.be'));
   }
 
-  Future<void> _pollProgress() async {
-    while (_isLoading) {
+  Future<void> _pollProgress(int session) async {
+    while (_isLoading && session == _session) {
       try {
         final response = await _httpClient.get(Uri.parse('$_baseUrl/progress'));
         final data = jsonDecode(response.body);
-        if (!mounted) return;
+        if (!mounted || session != _session) return;
         final log = List<String>.from(data['log'] ?? []);
         setState(() {
           _statusText = log.isNotEmpty ? log.last : null;
@@ -329,7 +370,7 @@ class HomeScreenState extends State<HomeScreen> {
       } catch (_) {}
       await Future.delayed(const Duration(milliseconds: 600));
     }
-    if (mounted) setState(() => _statusText = null);
+    if (mounted && session == _session) setState(() => _statusText = null);
   }
 
   /// Aborts the current backend request and asks the backend to stop
@@ -366,6 +407,11 @@ class HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    final session = _session;
+    // True once the user has moved to another chat; this request's results
+    // must then be ignored.
+    bool stale() => session != _session;
+
     setState(() {
       _errorText = null;
       _messages.add(ChatMessage(text, true));
@@ -373,7 +419,7 @@ class HomeScreenState extends State<HomeScreen> {
     });
     _controller.clear();
     _scrollToBottom();
-    _pollProgress();
+    _pollProgress(session);
 
     try {
       if (_currentVideoTitle == null) {
@@ -385,6 +431,7 @@ class HomeScreenState extends State<HomeScreen> {
             'transcription_model': _selectedTranscription.requestValue,
           }),
         );
+        if (stale()) return;
         final data = jsonDecode(response.body);
 
         if (data['error'] != null) {
@@ -405,6 +452,7 @@ class HomeScreenState extends State<HomeScreen> {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'video_title': _currentVideoTitle, 'model_choice': _selectedQaModel.requestValue}),
           );
+          if (stale()) return;
           final data = jsonDecode(response.body);
           _currentSummary = data['summary'];
           _summaryRequestCount++;
@@ -420,21 +468,25 @@ class HomeScreenState extends State<HomeScreen> {
               'user_preferences': _responsePreference,
             }),
           );
+          if (stale()) return;
           final data = jsonDecode(response.body);
           setState(() => _messages.add(ChatMessage(data['answer'] ?? data['error'] ?? 'Something went wrong.', false)));
         }
       }
     } catch (e) {
-      if (!_wasInterrupted) {
+      if (!_wasInterrupted && !stale() && mounted) {
         setState(() => _messages.add(ChatMessage('Error: could not reach the server. Is it running?', false)));
       }
     } finally {
-      _wasInterrupted = false;
-      setState(() => _isLoading = false);
-      await saveCurrentConversation();
+      // If the user left this chat, the cancel already cleaned up and saved.
+      if (!stale()) {
+        _wasInterrupted = false;
+        if (mounted) setState(() => _isLoading = false);
+        await saveCurrentConversation();
+      }
     }
 
-    _scrollToBottom();
+    if (!stale()) _scrollToBottom();
   }
 
   Future<void> _openVoiceScreen() async {
@@ -508,7 +560,11 @@ class HomeScreenState extends State<HomeScreen> {
               duration: const Duration(milliseconds: 400),
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 30,
+                  bottom: 80,),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
                   final msg = _messages[index];
@@ -557,7 +613,7 @@ class HomeScreenState extends State<HomeScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.textDark)),
                   const SizedBox(height: 6),
-                  const Text('Paste a lecture link below to get a summary, or ask a question.',
+                  const Text('Paste a lecture link below to get a summary, or Q & A',
                       textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
                 ],
               ),
@@ -682,7 +738,7 @@ class HomeScreenState extends State<HomeScreen> {
                         option: _selectedTranscription,
                         onTap: _showTranscriptionPicker,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _ModelChip(
                         prefix: 'Answers',
                         option: _selectedQaModel,
@@ -717,7 +773,7 @@ class _ModelChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

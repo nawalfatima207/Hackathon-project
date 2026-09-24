@@ -9,6 +9,14 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  /// Error from a Google redirect sign-in, shown once on the login screen.
+  String? _redirectError;
+  String? takeRedirectError() {
+    final e = _redirectError;
+    _redirectError = null;
+    return e;
+  }
+
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -38,18 +46,27 @@ class AuthService {
   Future<String?> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        // signInWithPopup relies on the popup relaying its result back to
-        // this window via storage/postMessage. Modern Chrome's third-party
-        // storage partitioning blocks that relay for a lot of users -- the
-        // popup finishes fine on Google's side, but the result never makes
-        // it back, so sign-in looks like it silently does nothing. Redirecting
-        // the whole page avoids that relay entirely.
         final provider = GoogleAuthProvider();
-        await _auth.signInWithRedirect(provider);
-        // The page navigates away here. When it comes back, authStateChanges()
-        // (already wired up in main.dart) picks up the signed-in user on its
-        // own -- see consumePendingRedirectResult() for surfacing errors.
-        return null;
+        try {
+          // Popup first: it hands the signed-in user straight back to this
+          // page, so it works even when the redirect result gets lost (which
+          // happens when the auth domain differs from the page's domain, e.g.
+          // on localhost -- the symptom is "Google login finishes but the app
+          // stays on the login screen").
+          await _auth.signInWithPopup(provider);
+          return null;
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'popup-closed-by-user' ||
+              e.code == 'cancelled-popup-request') {
+            return 'Sign in cancelled.';
+          }
+          if (e.code == 'popup-blocked') {
+            // Browser blocked the popup -> fall back to a full-page redirect.
+            await _auth.signInWithRedirect(provider);
+            return null;
+          }
+          rethrow;
+        }
       }
 
       final googleUser = await _googleSignIn.signIn();
@@ -87,7 +104,8 @@ class AuthService {
       return null;
     } on FirebaseAuthException catch (e) {
       debugPrint('[Zylo] Google redirect sign-in FAILED: ${e.code} -- ${e.message}');
-      return e.message ?? 'Google sign in failed.';
+      _redirectError = e.message ?? 'Google sign in failed.';
+      return _redirectError;
     } catch (e) {
       debugPrint('[Zylo] Google redirect sign-in threw a non-Firebase error: $e');
       return null;

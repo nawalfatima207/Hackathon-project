@@ -1,4 +1,5 @@
 import 'package:zero_ai_project/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +9,7 @@ import 'home_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
+import 'signup_screen.dart';
 import 'conversation_store.dart';
 import 'widgets/glass.dart';
 import 'widgets/custom_icons.dart';
@@ -46,25 +48,50 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: StreamBuilder(
-        stream: AuthService.instance.authStateChanges,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              backgroundColor: AppColors.background,
-              body: Center(
-                child: CircularProgressIndicator(color: AppColors.accentSoft),
-              ),
-            );
-          }
+      home: const AuthGate(),
+    );
+  }
+}
 
-          if (snapshot.hasData) {
-            return const RootShell();
-          }
+/// Single place that decides "logged in -> app, logged out -> login/signup".
+///
+/// Login and Signup are swapped *inside* this widget (not pushed as routes),
+/// so the auth listener below is never removed from the tree. Any successful
+/// sign-in (email, Google popup, or Google redirect) flips the stream and the
+/// app moves to the home screen on its own -- no manual Navigator calls.
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
 
-          return const LoginScreen();
-        },
-      ),
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _showSignup = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: AuthService.instance.authStateChanges,
+      initialData: AuthService.instance.currentUser,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return const RootShell();
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.accentSoft),
+            ),
+          );
+        }
+
+        return _showSignup
+            ? SignupScreen(onShowLogin: () => setState(() => _showSignup = false))
+            : LoginScreen(onShowSignup: () => setState(() => _showSignup = true));
+      },
     );
   }
 }
@@ -129,15 +156,9 @@ class _RootShellState extends State<RootShell> {
   }
 
   Future<void> _handleLogout() async {
-    Navigator.pop(context);
+    Navigator.pop(context); // close the drawer
+    // AuthGate listens to the auth stream and shows the login screen itself.
     await AuthService.instance.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const LoginScreen(),
-      ),
-      (route) => false,
-    );
   }
 
   @override
