@@ -75,6 +75,7 @@ class _BotPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
     final center = Offset(w / 2, h / 2);
+    final eyeColor = listening ? AppColors.teal : const Color(0xFF3FE7FF);
 
     // Soft glow behind the bot
     final glowPaint = Paint()
@@ -126,12 +127,12 @@ class _BotPainter extends CustomPainter {
     );
     canvas.drawRRect(faceRect, Paint()..color = AppColors.backgroundDeep.withOpacity(0.92));
 
-    // Eyes — glowing, with a blink (squash vertically)
+    // Eyes -- glowing cyan, with a blink (squash vertically)
     final eyeH = h * 0.07 * (1 - blink * 0.85);
     final eyePaint = Paint()
-      ..color = listening ? AppColors.teal : AppColors.accentSoft
+      ..color = eyeColor.withOpacity(0.9)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-    final eyeCorePaint = Paint()..color = listening ? AppColors.teal : Colors.white;
+    final eyeCorePaint = Paint()..color = eyeColor;
 
     for (final dx in [-0.11, 0.11]) {
       final eyeCenter = Offset(w * (0.5 + dx), h * 0.42);
@@ -148,6 +149,21 @@ class _BotPainter extends CustomPainter {
           Radius.circular(w * 0.03),
         ),
         eyeCorePaint,
+      );
+    }
+
+    // Smile
+    if (blink < 0.5) {
+      final smilePath = Path()
+        ..moveTo(w * 0.5 - w * 0.06, h * 0.485)
+        ..quadraticBezierTo(w * 0.5, h * 0.52, w * 0.5 + w * 0.06, h * 0.485);
+      canvas.drawPath(
+        smilePath,
+        Paint()
+          ..color = eyeColor.withOpacity(0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = w * 0.016
+          ..strokeCap = StrokeCap.round,
       );
     }
 

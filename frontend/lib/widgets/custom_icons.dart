@@ -28,6 +28,7 @@ enum AppGlyph {
   back,
   bookmark,
   waveform,
+  stop,
 }
 
 class AppIcon extends StatelessWidget {
@@ -316,6 +317,16 @@ class _GlyphPainter extends CustomPainter {
           final barH = h * bars[i];
           canvas.drawLine(Offset(dx, h * 0.5 - barH / 2), Offset(dx, h * 0.5 + barH / 2), stroke);
         }
+        break;
+
+      case AppGlyph.stop:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(w * 0.5, h * 0.5), width: w * 0.5, height: h * 0.5),
+            Radius.circular(w * 0.08),
+          ),
+          fill,
+        );
         break;
     }
   }

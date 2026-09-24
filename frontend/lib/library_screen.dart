@@ -127,10 +127,9 @@ class LibraryScreenState extends State<LibraryScreen> {
           colors: AppColors.backgroundGradient,
         ),
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-          child: Column(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
@@ -184,11 +183,9 @@ class LibraryScreenState extends State<LibraryScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }
-
 
 class _LectureCard extends StatelessWidget {
   final LectureItem item;

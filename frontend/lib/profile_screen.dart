@@ -192,8 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           colors: AppColors.backgroundGradient,
         ),
       ),
-      child: SafeArea(
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
           child: Column(
             children: [
               Stack(
@@ -211,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const Positioned(
-                    top: 20,
+                    top: 12,
                     left: 56,
                     right: 60,
                     child: Column(
@@ -239,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   Positioned(
-                    top: 16,
+                    top: 8,
                     right: 16,
                     child: GlassIconButton(
                       icon: const AppIcon(AppGlyph.edit, color: AppColors.textDark, size: 17),
@@ -360,7 +359,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

@@ -5,8 +5,16 @@ import 'app_colors.dart';
 import 'widgets/glass.dart';
 import 'widgets/custom_icons.dart';
 
-/// Full-screen "listening" experience. Pop this screen with the
-/// recognized text via Navigator.pop(context, recognizedText).
+/// What VoiceScreen hands back: the recognized text, and whether the caller
+/// should send it immediately or just drop it into the input field.
+class VoiceResult {
+  final String text;
+  final bool autoSend;
+  const VoiceResult(this.text, {this.autoSend = false});
+}
+
+/// Full-screen "listening" experience. Pop this screen with a VoiceResult
+/// via Navigator.pop(context, VoiceResult(text, autoSend: ...)).
 class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
 
@@ -191,17 +199,36 @@ class _VoiceScreenState extends State<VoiceScreen> with SingleTickerProviderStat
                     GlassIconButton(
                       icon: const AppIcon(AppGlyph.edit, color: AppColors.textDark, size: 18),
                       onTap: () {
-                        Navigator.pop(context, _recognized);
+                        Navigator.pop(context, VoiceResult(_recognized));
                       },
                     ),
                     GlassGradientButton(
-                      onTap: _recognized.trim().isEmpty ? null : () => Navigator.pop(context, _recognized),
+                      onTap: _recognized.trim().isEmpty
+                          ? null
+                          : () => Navigator.pop(context, VoiceResult(_recognized)),
                       child: const Text('Use this',
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
                     ),
-                    GlassIconButton(
-                      icon: const AppIcon(AppGlyph.bookmark, color: AppColors.textDark, size: 18),
-                      onTap: () {},
+                    // Sends the recognized text straight into the chat, no extra tap needed.
+                    GestureDetector(
+                      onTap: _recognized.trim().isEmpty
+                          ? null
+                          : () => Navigator.pop(context, VoiceResult(_recognized, autoSend: true)),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: _recognized.trim().isEmpty
+                                ? [AppColors.glassFillStrong, AppColors.glassFillStrong]
+                                : AppColors.accentGradient,
+                          ),
+                        ),
+                        child: const Center(
+                          child: AppIcon(AppGlyph.send, color: Colors.white, size: 18),
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -39,6 +39,7 @@ dependencies:
   google_sign_in: ^6.2.1
   cupertino_icons: ^1.0.8
   speech_to_text: ^7.5.0
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -53,18 +54,30 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
-# The following section is specific to Flutter packages.
+
 flutter:
 
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  # ...keep your existing "uses-material-design: true" etc...
+  assets:
+    - assets/images/zylo_logo.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/zylo_icon_solid.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0E0A1A"
+  adaptive_icon_foreground: "assets/icon/zylo_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/zylo_icon_solid.png"
+    background_color: "#0E0A1A"
+    theme_color: "#9B6BFF"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

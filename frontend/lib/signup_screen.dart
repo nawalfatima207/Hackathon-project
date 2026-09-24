@@ -1,5 +1,6 @@
 import 'package:zero_ai_project/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:zero_ai_project/widgets/google_logo.dart';
 import 'app_colors.dart';
 import 'login_screen.dart';
 import 'main.dart';
@@ -152,10 +153,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 16),
 
                 OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: wire up Google sign-in later
-                  },
-                  icon: const Icon(Icons.g_mobiledata, size: 24, color: AppColors.textDark),
+                  onPressed: _isLoading ? null : _handleGoogleSignIn,
+                  icon: const GoogleLogo(size: 18),
                   label: const Text('Continue with Google', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),

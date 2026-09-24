@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'signup_screen.dart';
 import 'main.dart';
+import 'widgets/zylo_logo.dart';
+import 'widgets/google_logo.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -80,14 +82,18 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
+                const Center(child: ZyloMark(size: 76)),
+                const SizedBox(height: 20),
                 const Text(
-                  'Welcome back',
+                  'Welcome to Zylo',
+                  textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark),
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   'Log in to keep studying where you left off.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                 ),
                 const SizedBox(height: 32),
@@ -165,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(Icons.g_mobiledata, size: 24, color: AppColors.textDark),
+                  icon: const GoogleLogo(size: 18),
                   label: const Text('Continue with Google', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),

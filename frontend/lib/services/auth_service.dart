@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -38,11 +38,17 @@ class AuthService {
   Future<String?> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        // google_sign_in's programmatic signIn() is no longer supported on
-        // Flutter Web (Google deprecated that flow for GIS). On web, Firebase
-        // Auth's own popup handles the whole OAuth round trip instead.
+        // signInWithPopup relies on the popup relaying its result back to
+        // this window via storage/postMessage. Modern Chrome's third-party
+        // storage partitioning blocks that relay for a lot of users -- the
+        // popup finishes fine on Google's side, but the result never makes
+        // it back, so sign-in looks like it silently does nothing. Redirecting
+        // the whole page avoids that relay entirely.
         final provider = GoogleAuthProvider();
-        await _auth.signInWithPopup(provider);
+        await _auth.signInWithRedirect(provider);
+        // The page navigates away here. When it comes back, authStateChanges()
+        // (already wired up in main.dart) picks up the signed-in user on its
+        // own -- see consumePendingRedirectResult() for surfacing errors.
         return null;
       }
 
@@ -58,9 +64,33 @@ class AuthService {
       await _auth.signInWithCredential(credential);
       return null;
     } on FirebaseAuthException catch (e) {
+      debugPrint('[Zylo] Google sign-in FAILED: ${e.code} -- ${e.message}');
       return e.message ?? 'Google sign in failed.';
     } catch (e) {
+      debugPrint('[Zylo] Google sign-in threw a non-Firebase error: $e');
       return 'Google sign in failed: $e';
+    }
+  }
+
+  /// Call once at startup (web only). Completes the sign-in started by
+  /// signInWithRedirect() and surfaces any error that happened along the way
+  /// (e.g. an account already existing under a different provider).
+  Future<String?> consumePendingRedirectResult() async {
+    if (!kIsWeb) return null;
+    try {
+      final result = await _auth.getRedirectResult();
+      if (result.user != null) {
+        debugPrint('[Zylo] Google redirect sign-in succeeded: ${result.user!.email}');
+      } else {
+        debugPrint('[Zylo] getRedirectResult() returned no user (no pending redirect, or already consumed).');
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[Zylo] Google redirect sign-in FAILED: ${e.code} -- ${e.message}');
+      return e.message ?? 'Google sign in failed.';
+    } catch (e) {
+      debugPrint('[Zylo] Google redirect sign-in threw a non-Firebase error: $e');
+      return null;
     }
   }
 

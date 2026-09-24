@@ -86,6 +86,51 @@ def log_progress(message, replace_last=False):
 def reset_progress():
     progress_log.clear()
 
+# ---------- Interruption ----------
+# Cooperative cancellation: a flag checked between steps (chunks, segments,
+# subprocess calls), PLUS real OS-level termination for anything running as
+# a subprocess (ffmpeg). A live network call already in flight (a single
+# Groq/Gemini/Ollama request) can't be aborted mid-request from here -- the
+# flag is checked right before and right after each one instead, so at most
+# one in-flight call finishes before the pipeline actually stops.
+
+class PipelineInterrupted(Exception):
+    """Raised internally when a stop request comes in; caught in server.py."""
+    pass
+
+_interrupt_event = threading.Event()
+_process_lock = threading.Lock()
+_current_process = None  # the currently-running subprocess.Popen, if any
+
+def reset_interrupt():
+    """Call at the start of every new /process, /summarize, /ask request."""
+    _interrupt_event.clear()
+
+def request_interrupt():
+    """Call from the /interrupt endpoint. Flips the flag AND kills whatever
+    subprocess (ffmpeg) is running right now, for an immediate stop."""
+    _interrupt_event.set()
+    with _process_lock:
+        if _current_process is not None and _current_process.poll() is None:
+            try:
+                _current_process.terminate()
+            except Exception:
+                pass
+
+def check_interrupt():
+    if _interrupt_event.is_set():
+        raise PipelineInterrupted("Cancelled by user.")
+
+def _track_process(proc):
+    global _current_process
+    with _process_lock:
+        _current_process = proc
+
+def _untrack_process():
+    global _current_process
+    with _process_lock:
+        _current_process = None
+
 # ---------- Model switch ----------
 
 def call_llm(prompt, model_choice="ollama"):
@@ -125,13 +170,18 @@ def show_loading(stop_event, label="Loading"):
     sys.stdout.write("\r" + " " * 30 + "\r")
 
 # ---------- Download ----------
+def _ydl_interrupt_hook(d):
+    check_interrupt()
+
 def download_audio(url):
+    check_interrupt()
     log_progress("Fetching video info...")
     info_opts = {'quiet': True, **YDL_COMMON_OPTS}
     with yt_dlp.YoutubeDL(info_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         video_title = sanitize_filename(info['title'])
 
+    check_interrupt()
     audio_path = f"downloads/{video_title}.mp3"
     if os.path.exists(audio_path):
         log_progress("Audio already downloaded, skipping.")
@@ -149,10 +199,17 @@ def download_audio(url):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
+        'progress_hooks': [_ydl_interrupt_hook],
         **YDL_COMMON_OPTS,
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    except Exception:
+        # If we were the ones who raised (via the progress hook), surface
+        # that clearly instead of whatever yt-dlp wrapped it in.
+        check_interrupt()
+        raise
 
     log_progress("Download complete.")
     return video_title, audio_path
@@ -191,6 +248,7 @@ def get_local_model():
     return _local_model
 
 def transcribe_audio(file_path, language=None):
+    check_interrupt()
     log_progress("Transcribing audio (local)...")
     t0 = time.perf_counter()
     model = get_local_model()
@@ -198,17 +256,33 @@ def transcribe_audio(file_path, language=None):
         file_path, beam_size=1, vad_filter=True,
         language=to_whisper_language(language),
     )
-    result = [{"start": s.start, "end": s.end, "text": s.text} for s in segments]
+    result = []
+    for s in segments:
+        # segments is a lazy generator -- each iteration decodes the next
+        # chunk of audio, so this check actually stops mid-transcription
+        # instead of only between whole-file calls.
+        check_interrupt()
+        result.append({"start": s.start, "end": s.end, "text": s.text})
     log_progress(f"Transcription complete (local) in {time.perf_counter() - t0:.1f}s.")
     return result
 
 # ---------- Transcription: Groq ----------
 def _run(cmd):
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    check_interrupt()
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    _track_process(proc)
+    try:
+        _, stderr = proc.communicate()
+    finally:
+        _untrack_process()
     if proc.returncode != 0:
-        raise RuntimeError(f"Command failed: {cmd[0]}\n{proc.stderr[-500:]}")
+        # A non-zero return from a process we just terminated ourselves
+        # means this was a cancellation, not a real ffmpeg failure.
+        check_interrupt()
+        raise RuntimeError(f"Command failed: {cmd[0]}\n{(stderr or '')[-500:]}")
 
 def _duration(path):
+    check_interrupt()
     out = subprocess.run(
         [FFPROBE_EXE, "-v", "error", "-show_entries", "format=duration",
          "-of", "default=noprint_wrappers=1:nokey=1", path],
@@ -229,11 +303,14 @@ def _prepare_chunks(file_path, work_dir):
 
     chunks, offset = [], 0.0
     for p in sorted(glob.glob(os.path.join(work_dir, "chunk_*.mp3"))):
+        check_interrupt()
         chunks.append((p, offset))
         offset += _duration(p)
     return chunks
 
 def _transcribe_one(chunk_path, offset, language):
+    check_interrupt()
+
     with open(chunk_path, "rb") as f:
         audio_bytes = f.read()
 
@@ -242,51 +319,115 @@ def _transcribe_one(chunk_path, offset, language):
         "model": "whisper-large-v3-turbo",
         "response_format": "verbose_json",
     }
+
     if language:
         kwargs["language"] = language
 
     response = groq_client.audio.transcriptions.create(**kwargs)
+    check_interrupt()
 
     segments = getattr(response, "segments", None)
-    if segments is None and isinstance(response, dict):
-        segments = response.get("segments", [])
+    detected_language = getattr(response, "language", None)
+
+    if isinstance(response, dict):
+        if segments is None:
+            segments = response.get("segments", [])
+        detected_language = response.get("language", detected_language)
 
     out = []
+
     for s in segments or []:
         if isinstance(s, dict):
             start, end, text = s["start"], s["end"], s["text"]
         else:
             start, end, text = s.start, s.end, s.text
-        out.append({"start": start + offset, "end": end + offset, "text": text})
-    return out
+
+        out.append({
+            "start": start + offset,
+            "end": end + offset,
+            "text": text
+        })
+
+    return out, detected_language
 
 def transcribe_audio_groq(file_path, language=None):
     """Groq-hosted Whisper. language: UI code ('ur', 'auto', ...) or None for auto-detect."""
+    
+    check_interrupt()
     log_progress("Transcribing audio (Groq)...")
     t_total = time.perf_counter()
+
     lang = to_whisper_language(language)
 
     with tempfile.TemporaryDirectory() as work_dir:
+
         t0 = time.perf_counter()
+
         chunks = _prepare_chunks(file_path, work_dir)
-        print(f"[timing] compress + split: {time.perf_counter() - t0:.1f}s ({len(chunks)} chunks)")
+
+        print(
+            f"[timing] compress + split: "
+            f"{time.perf_counter() - t0:.1f}s ({len(chunks)} chunks)"
+        )
 
         t0 = time.perf_counter()
-        with ThreadPoolExecutor(max_workers=GROQ_MAX_WORKERS) as pool:
-            futures = [pool.submit(_transcribe_one, p, off, lang) for p, off in chunks]
-            parts = [f.result() for f in futures]  # keeps chunk order
-        print(f"[timing] Groq API (all chunks): {time.perf_counter() - t0:.1f}s")
 
-    result = [seg for part in parts for seg in part]
-    log_progress(f"Transcription complete (Groq) in {time.perf_counter() - t_total:.1f}s.")
-    return result
+        with ThreadPoolExecutor(max_workers=GROQ_MAX_WORKERS) as pool:
+
+            futures = [
+                pool.submit(_transcribe_one, p, off, lang)
+                for p, off in chunks
+            ]
+
+            try:
+                parts = [f.result() for f in futures]
+
+            except PipelineInterrupted:
+                for fut in futures:
+                    fut.cancel()
+
+                pool.shutdown(
+                    wait=False,
+                    cancel_futures=True
+                )
+
+                raise
+
+        print(
+            f"[timing] Groq API (all chunks): "
+            f"{time.perf_counter() - t0:.1f}s"
+        )
+
+    # Combine segments from all chunks
+    result = [
+        seg
+        for part, _lang in parts
+        for seg in part
+    ]
+
+    # Get detected language from the first chunk that returned one
+    detected_language = next(
+        (lang for _part, lang in parts if lang),
+        None
+    )
+
+    log_progress(
+        f"Transcription complete (Groq) "
+        f"in {time.perf_counter() - t_total:.1f}s."
+    )
+
+    return result, detected_language
+
 
 def transcribe_audio_router(file_path, engine=DEFAULT_ENGINE, language=None):
     print(f"[router] engine={engine!r}, language={language!r}")
     """'groq' (cloud, fast) or 'whisper' (local). Falls back to local if Groq fails."""
+    check_interrupt()
     if engine == "groq":
         try:
             return transcribe_audio_groq(file_path, language=language)
+        except PipelineInterrupted:
+            raise
         except Exception as e:
             print(f"[groq error] {e}")
             log_progress("Groq failed, falling back to local Whisper...")
@@ -321,14 +462,20 @@ def get_embedding(text):
     return data["embedding"]
 
 def embed_chunks(chunks):
+    check_interrupt()
     total = len(chunks)
     log_progress(f"Embedding chunk 0/{total}...")
     t0 = time.perf_counter()
     with ThreadPoolExecutor(max_workers=EMBED_WORKERS) as pool:
         embeddings = pool.map(get_embedding, [c["text"] for c in chunks])  # ordered
-        for i, (chunk, emb) in enumerate(zip(chunks, embeddings)):
-            chunk["embedding"] = emb
-            log_progress(f"Embedding chunk {i+1}/{total}...", replace_last=True)
+        try:
+            for i, (chunk, emb) in enumerate(zip(chunks, embeddings)):
+                check_interrupt()
+                chunk["embedding"] = emb
+                log_progress(f"Embedding chunk {i+1}/{total}...", replace_last=True)
+        except PipelineInterrupted:
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
     log_progress(f"Embedding complete in {time.perf_counter() - t0:.1f}s.")
     return chunks
 
@@ -343,19 +490,34 @@ def retrieve_relevant_chunks(question, chunks, top_k=3):
     return [c for _, c in scored[:top_k]]
 
 # ---------- Persistence: one JSON file per video ----------
-def save_processed_data(video_title, segments, chunks):
+def save_processed_data(video_title, segments, chunks, detected_language):
     os.makedirs("data", exist_ok=True)
-    with open(f"data/{video_title}.json", "w", encoding="utf-8") as f:
-        json.dump({"segments": segments, "chunks": chunks}, f)
 
+    with open(f"data/{video_title}.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "segments": segments,
+                "chunks": chunks,
+                "detected_language": detected_language
+            },
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 def load_processed_data(video_title):
     path = f"data/{video_title}.json"
+
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return data["segments"], data["chunks"]
-    return None, None
 
+        return (
+            data["segments"],
+            data["chunks"],
+            data.get("detected_language")
+        )
+
+    return None, None, None
 def save_transcript_as_text(video_title, segments):
     os.makedirs("transcripts", exist_ok=True)
     lines = [f"[{format_timestamp(s['start'])} -> {format_timestamp(s['end'])}] {s['text']}" for s in segments]
@@ -365,7 +527,13 @@ def save_transcript_as_text(video_title, segments):
     print(f"Transcript saved to {path}")
 
 # ---------- Summarization (on request only) ----------
-def summarize(chunks, model_choice="ollama", response_language="English"):
+def summarize(
+    chunks,
+    model_choice="ollama",
+    response_language="English",
+    detected_language=None
+):
+    check_interrupt()
     log_progress("Generating summary...")
     full_text = " ".join(c["text"] for c in chunks)
     prompt = f"""You are summarizing a video into clear, structured study notes.
@@ -387,6 +555,7 @@ Transcript:
 
 # ---------- Q&A ----------
 def ask_question(question, chunks, history, user_preferences="", model_choice="ollama", response_language="English"):
+    check_interrupt()
     log_progress("Thinking...")
     relevant = retrieve_relevant_chunks(question, chunks)
     context = "\n\n".join(

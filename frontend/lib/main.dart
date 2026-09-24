@@ -19,6 +19,11 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // Completes a Google sign-in that used signInWithRedirect (web), so the
+  // very first frame already reflects the signed-in state instead of
+  // flashing the login screen before authStateChanges() catches up.
+  await AuthService.instance.consumePendingRedirectResult();
+
   runApp(const MyApp());
 }
 

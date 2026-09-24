@@ -52,6 +52,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = false;
   String? _statusText;
+  http.Client _httpClient = http.Client();
+  bool _wasInterrupted = false;
 
   // Transcription is handled separately from question-answering: Groq's
   // hosted Whisper, or a local faster-whisper run. This only affects the
@@ -79,6 +81,7 @@ class HomeScreenState extends State<HomeScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _preferenceController.dispose();
+    _httpClient.close();
     super.dispose();
   }
 
@@ -316,7 +319,7 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _pollProgress() async {
     while (_isLoading) {
       try {
-        final response = await http.get(Uri.parse('$_baseUrl/progress'));
+        final response = await _httpClient.get(Uri.parse('$_baseUrl/progress'));
         final data = jsonDecode(response.body);
         if (!mounted) return;
         final log = List<String>.from(data['log'] ?? []);
@@ -327,6 +330,31 @@ class HomeScreenState extends State<HomeScreen> {
       await Future.delayed(const Duration(milliseconds: 600));
     }
     if (mounted) setState(() => _statusText = null);
+  }
+
+  /// Aborts the current backend request and asks the backend to stop
+  /// whatever it was doing. See SETUP_NOTES.md for the small backend change
+  /// this relies on.
+  void _interruptRequest() async {
+    if (!_isLoading) return;
+    _wasInterrupted = true;
+
+    // Best-effort: tell the backend to stop its current job.
+    try {
+      await http.post(Uri.parse('$_baseUrl/interrupt'));
+    } catch (_) {}
+
+    // Abort whatever request is in flight on our end, then get a fresh
+    // client ready for the next request (a closed client can't be reused).
+    _httpClient.close();
+    _httpClient = http.Client();
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _statusText = null;
+      _messages.add(ChatMessage('Cancelled.', false));
+    });
   }
 
   Future<void> _handleSubmit() async {
@@ -349,7 +377,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     try {
       if (_currentVideoTitle == null) {
-        final response = await http.post(
+        final response = await _httpClient.post(
           Uri.parse('$_baseUrl/process'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
@@ -372,7 +400,7 @@ class HomeScreenState extends State<HomeScreen> {
         final isSummaryRequest = text.toLowerCase().contains('summary') || text.toLowerCase().contains('summarize');
 
         if (isSummaryRequest) {
-          final response = await http.post(
+          final response = await _httpClient.post(
             Uri.parse('$_baseUrl/summarize'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'video_title': _currentVideoTitle, 'model_choice': _selectedQaModel.requestValue}),
@@ -382,7 +410,7 @@ class HomeScreenState extends State<HomeScreen> {
           _summaryRequestCount++;
           setState(() => _messages.add(ChatMessage(data['summary'] ?? data['error'] ?? 'Something went wrong.', false)));
         } else {
-          final response = await http.post(
+          final response = await _httpClient.post(
             Uri.parse('$_baseUrl/ask'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
@@ -397,8 +425,11 @@ class HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      setState(() => _messages.add(ChatMessage('Error: could not reach the server. Is it running?', false)));
+      if (!_wasInterrupted) {
+        setState(() => _messages.add(ChatMessage('Error: could not reach the server. Is it running?', false)));
+      }
     } finally {
+      _wasInterrupted = false;
       setState(() => _isLoading = false);
       await saveCurrentConversation();
     }
@@ -407,12 +438,17 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openVoiceScreen() async {
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<VoiceResult>(
       context,
       MaterialPageRoute(builder: (_) => const VoiceScreen()),
     );
-    if (result != null && result.trim().isNotEmpty) {
-      setState(() => _controller.text = result.trim());
+    if (result == null) return;
+    final text = result.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() => _controller.text = text);
+    if (result.autoSend) {
+      _handleSubmit();
     }
   }
 
@@ -450,26 +486,15 @@ class HomeScreenState extends State<HomeScreen> {
             top: 8,
             left: 60,
             right: 16,
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('ZYLO',
-                          style: TextStyle(
-                              color: AppColors.accentSoft, fontSize: 11, letterSpacing: 2.4, fontWeight: FontWeight.w700)),
-                      Text('Hey ${widget.userName}!',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                    ],
-                  ),
-                ),
-                GlassIconButton(
-                  size: 38,
-                  icon: const AppIcon(AppGlyph.bell, color: AppColors.textDark, size: 16),
-                  onTap: showPreferencesSheet,
-                ),
+                const Text('ZYLO',
+                    style: TextStyle(
+                        color: AppColors.accentSoft, fontSize: 11, letterSpacing: 2.4, fontWeight: FontWeight.w700)),
+                Text('Hey ${widget.userName}!',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
               ],
             ),
           ),
@@ -483,7 +508,7 @@ class HomeScreenState extends State<HomeScreen> {
               duration: const Duration(milliseconds: 400),
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                 itemCount: _messages.length,
                 itemBuilder: (context, index) {
                   final msg = _messages[index];
@@ -558,9 +583,8 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 if (_isLoading)
                   Padding(
-                    padding: const EdgeInsets.only(left: 16, bottom: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 4, bottom: 8),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(
                           width: 16,
@@ -569,13 +593,35 @@ class HomeScreenState extends State<HomeScreen> {
                         ),
                         if (_statusText != null) ...[
                           const SizedBox(width: 8),
-                          Flexible(
+                          Expanded(
                             child: Text(
                               _statusText!,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
                             ),
                           ),
-                        ],
+                        ] else
+                          const Spacer(),
+                        GestureDetector(
+                          onTap: _interruptRequest,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.magenta.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.magenta.withOpacity(0.4)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const AppIcon(AppGlyph.stop, color: AppColors.magenta, size: 11),
+                                const SizedBox(width: 5),
+                                const Text('Stop',
+                                    style: TextStyle(color: AppColors.magenta, fontSize: 12, fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -585,7 +631,7 @@ class HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     children: [
                       // Reserved space for the Zylo logo asset -- see widgets/zylo_logo.dart.
-                      const ZyloMark(size: 32),
+                      const ZyloMark(size: 40),
                       const SizedBox(width: 8),
                       Container(width: 1, height: 20, color: AppColors.glassBorder),
                       Expanded(
